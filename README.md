@@ -187,7 +187,7 @@ public class Publisher {
 ```
 
 In below example we are using `@EntityGraph` and value attribute `graph.author.books` to get entity graph api. 
-It will load only Books objects but not publisher associate with books
+It will load only Book objects but not publisher associate with books
 
 ### Repository Class
 ```java
@@ -265,7 +265,7 @@ Hibernate:
 ```
 
 In below example we are using `@EntityGraph` and value attribute `graph.author.books.publisher` to get entity graph api. 
-It will load only Books objects as well as publisher associate with books
+It will load Book objects as well as publisher associate with books
 
 ### Repository Class
 ```java

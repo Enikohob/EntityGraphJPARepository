@@ -186,9 +186,7 @@ public class Publisher {
 
 ```
 
-### Named Entity Graph Testing Here
-
-In this example we are using `@EntityGraph` and value attribute `graph.author.books` to get entity graph api. 
+In below example we are using `@EntityGraph` and value attribute `graph.author.books` to get entity graph api. 
 It will load only Books objects but not publisher associate with books
 
 ### Repository Class
@@ -266,7 +264,7 @@ Hibernate:
 
 ```
 
-In this example we are using `@EntityGraph` and value attribute `graph.author.books.publisher` to get entity graph api. 
+In below example we are using `@EntityGraph` and value attribute `graph.author.books.publisher` to get entity graph api. 
 It will load only Books objects as well as publisher associate with books
 
 ### Repository Class
@@ -417,7 +415,7 @@ public class Publisher {
 ```
 
 ### Repository Class
-In this example we can set attributes paths. `@EntityGraph(attributePaths = {"books"},type = EntityGraphType.LOAD)`
+In below example we can set attributes paths. `@EntityGraph(attributePaths = {"books"},type = EntityGraphType.LOAD)`
 It will load only Book objects but not publisher associate with books
 
 ```java
@@ -491,7 +489,7 @@ Hibernate:
   
 ```
 
-In this example we can set attributes paths. ` @EntityGraph(attributePaths = {"books","books.publisher"},type = EntityGraphType.LOAD)`
+In below example we can set attributes paths. ` @EntityGraph(attributePaths = {"books","books.publisher"},type = EntityGraphType.LOAD)`
 Author class has property name `books` and Book class has property name `publisher` 
 It will load Book objects as well as publisher associate with books
 

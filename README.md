@@ -38,6 +38,7 @@ graph TD
 
 ## Without Entity Graph
 
+### Repository Class
 ```java
 
 @Repository
@@ -48,7 +49,7 @@ public interface AuthorRepository extends JpaRepository<Author, Integer> {
 }
 
 ```
-
+### Test case 
 ```java
 	Author author = authorRepository.findAuthor(1);
 	log.info(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
@@ -88,7 +89,7 @@ Hibernate:
             on books0_.`book_id`=book1_.`id` 
     where
         books0_.`author_id`=?
-2020-07-12 20:18:16.222  INFO 11160 ---[main] .t.m.r.TestJPARepositoryNamedEntityGraph : Joshua Bloch wrote 1 books.
+20:18:16.222  INFO 11160 ---[main] .t.m.r.TestJPARepositoryNamedEntityGraph : Joshua Bloch wrote 1 books.
 Hibernate: 
     select
         publisher0_.`id` as id1_3_0_,
@@ -98,7 +99,7 @@ Hibernate:
         `publisher` publisher0_ 
     where
         publisher0_.`id`=?
-2020-07-12 20:18:16.232  INFO 11160 ---[main] .t.m.r.TestJPARepositoryNamedEntityGraph : Publisher name: Addison-Wesley Professional
+20:18:16.232  INFO 11160 ---[main] .t.m.r.TestJPARepositoryNamedEntityGraph : Publisher name: Addison-Wesley Professional
 
 ```
 
@@ -187,126 +188,158 @@ public class Publisher {
 
 ### Named Entity Graph Testing Here
 
-In this example we are using `@NamedEntityGraph` name attribute `graph.author.books` to get entity graph api. 
+In this example we are using `@EntityGraph` and value attribute `graph.author.books` to get entity graph api. 
 It will load only Books objects but not publisher associate with books
 
+### Repository Class
 ```java
 
-	EntityManager entityManager = getEntityManager();
-	String hql = "SELECT a FROM Author a WHERE a.id = 1";
-	EntityGraph graph = entityManager.getEntityGraph("graph.author.books");
-	TypedQuery<Author> query = entityManager.createQuery(hql, Author.class);
-	query.setHint("javax.persistence.loadgraph", graph);
-	Author author = query.getSingleResult();
-    System.out.println(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
-	Set<Book> books = author.getBooks(); 
-	for(Book book: books) {
-	   System.out.println(book.getPublisher()); 
+@Repository
+public interface AuthorRepository extends JpaRepository<Author, Integer> {
+
+     @EntityGraph(value ="graph.author.books" , type = EntityGraphType.LOAD)
+	 @Query("SELECT author FROM Author author WHERE author.id = :id ")
+	 Author findNamedEntityGraphBooksAndLoad(@Param("id")  Integer id);
+	
+}
+
+```
+### Test case
+```java
+
+	@Test
+	public void findNamedEntityGraphBooksAndLoad() {
+		log.info("... findNamedEntityGraphBooksAndLoad ...");		
+		Author author = authorRepository.findNamedEntityGraphBooksAndLoad(1);
+		displayAuthor(author);
 	}
+	
+	protected void displayAuthor(Author author) {
+		log.info(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
+		Set<Book> books = author.getBooks(); 
+		 for(Book book: books) {
+			log.info(book.getPublisher()); 
+		 }
+	}
+	
 ```
 
 we can notice that it issued only 2 queries to fetch data. This is because we included books as part of graph.
 
 ```log
 
-19:27:38,472 DEBUG [org.hibernate.SQL] - 
+Hibernate: 
     select
-        author0_.id as id1_0_0_,
-        book2_.id as id1_1_1_,
-        author0_.first_name as first_na2_0_0_,
-        author0_.last_name as last_nam3_0_0_,
-        author0_.version as version4_0_0_,
-        book2_.publisher_id as publishe5_1_1_,
-        book2_.publishing_date as publishi2_1_1_,
-        book2_.title as title3_1_1_,
-        book2_.version as version4_1_1_,
-        books1_.author_id as author_i2_2_0__,
-        books1_.book_id as book_id1_2_0__ 
+        author0_.`id` as id1_0_0_,
+        book2_.`id` as id1_1_1_,
+        author0_.`first_name` as first_na2_0_0_,
+        author0_.`last_name` as last_nam3_0_0_,
+        author0_.`version` as version4_0_0_,
+        book2_.`publisher_id` as publishe5_1_1_,
+        book2_.`publishing_date` as publishi2_1_1_,
+        book2_.`title` as title3_1_1_,
+        book2_.`version` as version4_1_1_,
+        books1_.`author_id` as author_i2_2_0__,
+        books1_.`book_id` as book_id1_2_0__ 
     from
-        author author0_ 
+        `author` author0_ 
     left outer join
-        book_author books1_ 
-            on author0_.id=books1_.author_id 
+        `book_author` books1_ 
+            on author0_.`id`=books1_.`author_id` 
     left outer join
-        book book2_ 
-            on books1_.book_id=book2_.id 
+        `book` book2_ 
+            on books1_.`book_id`=book2_.`id` 
     where
-        author0_.id=1
-
-Joshua Bloch wrote 1 books.
-
-19:27:38,534 DEBUG [org.hibernate.SQL] - 
+        author0_.`id`=?
+20:26:40.480  INFO 13376 --- [           main] .t.m.r.TestJPARepositoryNamedEntityGraph : Joshua Bloch wrote 1 books.
+Hibernate: 
     select
-        publisher0_.id as id1_3_0_,
-        publisher0_.name as name2_3_0_,
-        publisher0_.version as version3_3_0_ 
+        publisher0_.`id` as id1_3_0_,
+        publisher0_.`name` as name2_3_0_,
+        publisher0_.`version` as version3_3_0_ 
     from
-        publisher publisher0_ 
+        `publisher` publisher0_ 
     where
-        publisher0_.id=?
-
-
-Publisher name: Addison-Wesley Professional
+        publisher0_.`id`=?
+20:26:40.491  INFO 13376 --- [           main] .t.m.r.TestJPARepositoryNamedEntityGraph : Publisher name: Addison-Wesley Professional
 
 
 ```
 
-In this example we are using `@NamedEntityGraph` name attribute `graph.author.books.publisher` to get entity graph api. 
+In this example we are using `@EntityGraph` and value attribute `graph.author.books.publisher` to get entity graph api. 
 It will load only Books objects as well as publisher associate with books
+
+### Repository Class
+```java
+
+@Repository
+public interface AuthorRepository extends JpaRepository<Author, Integer> {
+
+     @EntityGraph(value ="graph.author.books.publisher",type = EntityGraphType.LOAD)
+	 @Query("SELECT author FROM Author author WHERE author.id = :id ")
+	 Author findNamedEntityGraphBooksPublisherAndLoad(@Param("id") Integer id);
+	
+}
+
+```
+### Test case
 
 ```java
 
-	EntityManager entityManager = getEntityManager();
-	String hql = "SELECT a FROM Author a WHERE a.id = 1";
-	EntityGraph graph = entityManager.getEntityGraph("graph.author.books.publisher");		
-	TypedQuery<Author> query = entityManager.createQuery(hql, Author.class);
-	query.setHint("javax.persistence.loadgraph", graph);
-	Author author = query.getSingleResult();
-	System.out.println(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
-	Set<Book> books = author.getBooks(); 
-	for(Book book: books) {
-	   System.out.println(book.getPublisher()); 
+	@Test
+	public void findNamedEntityGraphBooksPublisherAndLoad() {
+		log.info("... findNamedEntityGraphBooksPublisherAndLoad ...");		
+		Author author = authorRepository.findNamedEntityGraphBooksPublisherAndLoad(1);
+		displayAuthor(author);
 	}
+	
+	protected void displayAuthor(Author author) {
+		log.info(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
+		Set<Book> books = author.getBooks(); 
+		 for(Book book: books) {
+			log.info(book.getPublisher()); 
+		 }
+	}
+	
 ```
 we can notice that it issued only one query to fetch all data. This is because we included books and publisher as part of graph.
 
 ```log
-19:31:18,884 DEBUG [org.hibernate.SQL] - 
+Hibernate: 
     select
-        author0_.id as id1_0_0_,
-        book2_.id as id1_1_1_,
-        publisher3_.id as id1_3_2_,
-        author0_.first_name as first_na2_0_0_,
-        author0_.last_name as last_nam3_0_0_,
-        author0_.version as version4_0_0_,
-        book2_.publisher_id as publishe5_1_1_,
-        book2_.publishing_date as publishi2_1_1_,
-        book2_.title as title3_1_1_,
-        book2_.version as version4_1_1_,
-        books1_.author_id as author_i2_2_0__,
-        books1_.book_id as book_id1_2_0__,
-        publisher3_.name as name2_3_2_,
-        publisher3_.version as version3_3_2_ 
+        author0_.`id` as id1_0_0_,
+        book2_.`id` as id1_1_1_,
+        publisher3_.`id` as id1_3_2_,
+        author0_.`first_name` as first_na2_0_0_,
+        author0_.`last_name` as last_nam3_0_0_,
+        author0_.`version` as version4_0_0_,
+        book2_.`publisher_id` as publishe5_1_1_,
+        book2_.`publishing_date` as publishi2_1_1_,
+        book2_.`title` as title3_1_1_,
+        book2_.`version` as version4_1_1_,
+        books1_.`author_id` as author_i2_2_0__,
+        books1_.`book_id` as book_id1_2_0__,
+        publisher3_.`name` as name2_3_2_,
+        publisher3_.`version` as version3_3_2_ 
     from
-        author author0_ 
+        `author` author0_ 
     left outer join
-        book_author books1_ 
-            on author0_.id=books1_.author_id 
+        `book_author` books1_ 
+            on author0_.`id`=books1_.`author_id` 
     left outer join
-        book book2_ 
-            on books1_.book_id=book2_.id 
+        `book` book2_ 
+            on books1_.`book_id`=book2_.`id` 
     left outer join
-        publisher publisher3_ 
-            on book2_.publisher_id=publisher3_.id 
+        `publisher` publisher3_ 
+            on book2_.`publisher_id`=publisher3_.`id` 
     where
-        author0_.id=1
-
-Joshua Bloch wrote 1 books.
-Publisher name: Addison-Wesley Professional
+        author0_.`id`=?
+20:30:11.256  INFO 8560 --- [           main] .t.m.r.TestJPARepositoryNamedEntityGraph : Joshua Bloch wrote 1 books.
+20:30:11.257  INFO 8560 --- [           main] .t.m.r.TestJPARepositoryNamedEntityGraph : Publisher name: Addison-Wesley Professional
 
 ```
 
-## Dynamic Entity Graph
+## Attribute Paths
 
 ### Entity Class
 
@@ -383,315 +416,150 @@ public class Publisher {
 
 ```
 
-### Dynamic Entity Graph Testing Here
-
-In this example we can set attributes dynamically. Graph API has  `addAttributeNodes(property name)` method to set property names.
-We can set as many as attributesnodes to graph api. Here Author class has property name books. So we setting books attribute to graph.
-It will load only Books objects but not publisher associate with books
+### Repository Class
+In this example we can set attributes paths. `@EntityGraph(attributePaths = {"books"},type = EntityGraphType.LOAD)`
+It will load only Book objects but not publisher associate with books
 
 ```java
 
-	String HQL ="SELECT a FROM Author a WHERE a.id = 1"; 
-	EntityManager entityManager = getEntityManager();
-	EntityGraph<Author> graph = entityManager.createEntityGraph(Author.class);
-	graph.addAttributeNodes("books");
-	TypedQuery<Author> query = entityManager.createQuery(HQL, Author.class);
-	query.setHint("javax.persistence.loadgraph", graph);
-	Author author = query.getSingleResult();
-	System.out.println(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
-	Set<Book> books = author.getBooks(); 
-	for(Book book: books) {
-	   System.out.println(book.getPublisher()); 
+@Repository
+public interface AuthorRepository extends JpaRepository<Author, Integer> {
+
+     @EntityGraph(attributePaths = {"books"},type = EntityGraphType.LOAD)
+	 @Query("SELECT author FROM Author author WHERE author.id = :id ")
+	 Author findOnlyBooksAndLoad(@Param("id")  Integer id);
+	
+}
+
+```
+
+### Testing Here
+
+```java
+
+	@Test
+	public void findOnlyBooksAndLoad() {
+		log.info("... findOnlyBooksAndLoad ...");		
+		Author author = authorRepository.findOnlyBooksAndLoad(1);
+		displayAuthor(author);
+	}
+	
+	protected void displayAuthor(Author author) {
+		log.info(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
+		Set<Book> books = author.getBooks(); 
+		 for(Book book: books) {
+			log.info(book.getPublisher()); 
+		 }
 	}
 
 ```
 ```log
-  20:02:56,111 DEBUG [org.hibernate.SQL] - 
+  Hibernate: 
     select
-        author0_.id as id1_0_0_,
-        book2_.id as id1_1_1_,
-        author0_.first_name as first_na2_0_0_,
-        author0_.last_name as last_nam3_0_0_,
-        author0_.version as version4_0_0_,
-        book2_.publisher_id as publishe5_1_1_,
-        book2_.publishing_date as publishi2_1_1_,
-        book2_.title as title3_1_1_,
-        book2_.version as version4_1_1_,
-        books1_.author_id as author_i2_2_0__,
-        books1_.book_id as book_id1_2_0__ 
+        author0_.`id` as id1_0_0_,
+        book2_.`id` as id1_1_1_,
+        author0_.`first_name` as first_na2_0_0_,
+        author0_.`last_name` as last_nam3_0_0_,
+        author0_.`version` as version4_0_0_,
+        book2_.`publisher_id` as publishe5_1_1_,
+        book2_.`publishing_date` as publishi2_1_1_,
+        book2_.`title` as title3_1_1_,
+        book2_.`version` as version4_1_1_,
+        books1_.`author_id` as author_i2_2_0__,
+        books1_.`book_id` as book_id1_2_0__ 
     from
-        author author0_ 
+        `author` author0_ 
     left outer join
-        book_author books1_ 
-            on author0_.id=books1_.author_id 
+        `book_author` books1_ 
+            on author0_.`id`=books1_.`author_id` 
     left outer join
-        book book2_ 
-            on books1_.book_id=book2_.id 
+        `book` book2_ 
+            on books1_.`book_id`=book2_.`id` 
     where
-        author0_.id=1
-
-Joshua Bloch wrote 1 books.
-
-20:02:56,178 DEBUG [org.hibernate.SQL] - 
+        author0_.`id`=?
+20:39:38.277  INFO 6384 --- [           main] c.t.m.r.TestJPARepositoryEntityGraph     : Joshua Bloch wrote 1 books.
+Hibernate: 
     select
-        publisher0_.id as id1_3_0_,
-        publisher0_.name as name2_3_0_,
-        publisher0_.version as version3_3_0_ 
+        publisher0_.`id` as id1_3_0_,
+        publisher0_.`name` as name2_3_0_,
+        publisher0_.`version` as version3_3_0_ 
     from
-        publisher publisher0_ 
+        `publisher` publisher0_ 
     where
-        publisher0_.id=?
-
-Publisher name: Addison-Wesley Professional
+        publisher0_.`id`=?
+20:39:38.286  INFO 6384 --- [           main] c.t.m.r.TestJPARepositoryEntityGraph     : Publisher name: Addison-Wesley Professional
   
 ```
 
-Graph API provide to add sub graph and its properties also, by using  `addSubgraph(property name)` and `addAttributeNodes(property name)`
+In this example we can set attributes paths. ` @EntityGraph(attributePaths = {"books","books.publisher"},type = EntityGraphType.LOAD)`
 Author class has property name `books` and Book class has property name `publisher` 
-It will load only Books objects as well as publisher associate with books
+It will load Book objects as well as publisher associate with books
 
 ```java
 
-	EntityManager entityManager = getEntityManager();
-	String HQL ="SELECT a FROM Author a WHERE a.id = 1"; 
-	EntityGraph<Author> graph = entityManager.createEntityGraph(Author.class);
-	graph.addSubgraph("books").addAttributeNodes("publisher");
-	TypedQuery<Author> query = entityManager.createQuery(HQL, Author.class);
-	query.setHint("javax.persistence.loadgraph", graph);
-	Author author = query.getSingleResult();
-	System.out.println(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
-	Set<Book> books = author.getBooks(); 
-	for(Book book: books) {
-	   System.out.println(book.getPublisher()); 
-	}
+@Repository
+public interface AuthorRepository extends JpaRepository<Author, Integer> {
 
-```
-```log
-20:03:52,435 DEBUG [org.hibernate.SQL] - 
-    select
-        author0_.id as id1_0_0_,
-        book2_.id as id1_1_1_,
-        publisher3_.id as id1_3_2_,
-        author0_.first_name as first_na2_0_0_,
-        author0_.last_name as last_nam3_0_0_,
-        author0_.version as version4_0_0_,
-        book2_.publisher_id as publishe5_1_1_,
-        book2_.publishing_date as publishi2_1_1_,
-        book2_.title as title3_1_1_,
-        book2_.version as version4_1_1_,
-        books1_.author_id as author_i2_2_0__,
-        books1_.book_id as book_id1_2_0__,
-        publisher3_.name as name2_3_2_,
-        publisher3_.version as version3_3_2_ 
-    from
-        author author0_ 
-    left outer join
-        book_author books1_ 
-            on author0_.id=books1_.author_id 
-    left outer join
-        book book2_ 
-            on books1_.book_id=book2_.id 
-    left outer join
-        publisher publisher3_ 
-            on book2_.publisher_id=publisher3_.id 
-    where
-        author0_.id=1
-
-Joshua Bloch wrote 1 books.
-Publisher name: Addison-Wesley Professional
-
-
-```
-
-## Root Entity Graph
-
-### Entity Class
-
-```java
-@Entity
-public class Author {
-
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
-
-	@Version
-	private Integer version;
-
-	@Column(name = "first_name")
-	private String firstName;
-
-	@Column(name = "last_name")
-	private String lastName;
-
-	@ManyToMany(mappedBy="authors",fetch = FetchType.LAZY)
-	private Set<Book> books = new HashSet<Book>();
-
-
-}
-
-@Entity
-@Table(name = "book")
-public class Book {
-	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
-
-	@Version
-	private Integer version;
-
-	private String title;
-
-	@Temporal(TemporalType.DATE)
-	@Column(name = "publishing_date")
-	private Date publishingDate;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name="publisher_id")
-	private Publisher publisher;
-
-	@ManyToMany
-	@JoinTable(
-		      name="book_author",
-		      joinColumns={@JoinColumn(name="book_id", referencedColumnName="id")},
-		      inverseJoinColumns={@JoinColumn(name="author_id", referencedColumnName="id")})
-	private Set<Author> authors = new HashSet<Author>();
+     @EntityGraph(attributePaths = {"books","books.publisher"},type = EntityGraphType.LOAD)
+	 @Query("SELECT author FROM Author author WHERE author.id = :id ")
+	 Author findBooksPublisherAndLoad(@Param("id") Integer id);
 	
 }
 
-@Entity
-@Table(name = "publisher")
-public class Publisher {
+```
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+```java
 
-	@Version
-	private Integer version;
-
-	private String name;
-
-	@OneToMany(mappedBy = "publisher")
-	private Set<Book> books = new HashSet<Book>();
+	@Test
+	public void findBooksPublisherAndLoad() {
+		log.info("... findBooksPublisherAndLoad ...");		
+		Author author = authorRepository.findBooksPublisherAndLoad(1);
+		displayAuthor(author);
+	}
 	
-}		
-
-```
-
-### Root Entity Graph Testing Here
-
-In this example we need to create `RootGraph` object and pass all properties to load.
-
-In this example, it will load only Books objects but not publisher associate with books
-
-```java
-
-	String HQL ="SELECT a FROM Author a WHERE a.id = 1"; 
-	RootGraph<Author> graph = GraphParser.parse(Author.class, "books", entityManager);
-	Map<String, Object> properties = new HashMap<String, Object>();
-	properties.put("javax.persistence.loadgraph", graph);
-	TypedQuery<Author> query = entityManager.createQuery(HQL, Author.class);
-	Author author = query.getSingleResult();
-	System.out.println(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
-	Set<Book> books = author.getBooks(); 
-	for(Book book: books) {
-	   System.out.println(book.getPublisher()); 
+	protected void displayAuthor(Author author) {
+		log.info(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
+		Set<Book> books = author.getBooks(); 
+		 for(Book book: books) {
+			log.info(book.getPublisher()); 
+		 }
 	}
 
 ```
 ```log
-20:04:50,371 DEBUG [org.hibernate.SQL] - 
+Hibernate: 
     select
-        author0_.id as id1_0_0_,
-        author0_.first_name as first_na2_0_0_,
-        author0_.last_name as last_nam3_0_0_,
-        author0_.version as version4_0_0_,
-        books1_.author_id as author_i2_2_1_,
-        book2_.id as book_id1_2_1_,
-        book2_.id as id1_1_2_,
-        book2_.publisher_id as publishe5_1_2_,
-        book2_.publishing_date as publishi2_1_2_,
-        book2_.title as title3_1_2_,
-        book2_.version as version4_1_2_ 
+        author0_.`id` as id1_0_0_,
+        book2_.`id` as id1_1_1_,
+        publisher3_.`id` as id1_3_2_,
+        author0_.`first_name` as first_na2_0_0_,
+        author0_.`last_name` as last_nam3_0_0_,
+        author0_.`version` as version4_0_0_,
+        book2_.`publisher_id` as publishe5_1_1_,
+        book2_.`publishing_date` as publishi2_1_1_,
+        book2_.`title` as title3_1_1_,
+        book2_.`version` as version4_1_1_,
+        books1_.`author_id` as author_i2_2_0__,
+        books1_.`book_id` as book_id1_2_0__,
+        publisher3_.`name` as name2_3_2_,
+        publisher3_.`version` as version3_3_2_ 
     from
-        author author0_ 
+        `author` author0_ 
     left outer join
-        book_author books1_ 
-            on author0_.id=books1_.author_id 
+        `book_author` books1_ 
+            on author0_.`id`=books1_.`author_id` 
     left outer join
-        book book2_ 
-            on books1_.book_id=book2_.id 
+        `book` book2_ 
+            on books1_.`book_id`=book2_.`id` 
+    left outer join
+        `publisher` publisher3_ 
+            on book2_.`publisher_id`=publisher3_.`id` 
     where
-        author0_.id=?
+        author0_.`id`=?
+20:42:34.904  INFO 9508 --- [           main] c.t.m.r.TestJPARepositoryEntityGraph     : Joshua Bloch wrote 1 books.
+20:42:34.905  INFO 9508 --- [           main] c.t.m.r.TestJPARepositoryEntityGraph     : Publisher name: Addison-Wesley Professional
 
-Joshua Bloch wrote 1 books.
-
-20:04:50,424 DEBUG [org.hibernate.SQL] - 
-    select
-        publisher0_.id as id1_3_0_,
-        publisher0_.name as name2_3_0_,
-        publisher0_.version as version3_3_0_ 
-    from
-        publisher publisher0_ 
-    where
-        publisher0_.id=?
-
-Publisher name: Addison-Wesley Professional
 
 ```
 
-In this example we need to create `RootGraph` object and pass all properties to load. Author class has property name `books` and Book class has property name `publisher` 
 
-In this example, it will load only Books objects as well as publisher associate with books
-
-```java
-
-	String HQL ="SELECT a FROM Author a WHERE a.id = 1"; 
-	RootGraph<Author> graph = GraphParser.parse(Author.class, "books(publisher)", entityManager);
-	Map<String, Object> properties = new HashMap<String, Object>();
-	properties.put("javax.persistence.loadgraph", graph);
-	TypedQuery<Author> query = entityManager.createQuery(HQL, Author.class);
-	Author author = query.getSingleResult();
-	System.out.println(author.getFirstName()+" "+author.getLastName()+" wrote "+author.getBooks().size()+" books.");
-	Set<Book> books = author.getBooks(); 
-	for(Book book: books) {
-	   System.out.println(book.getPublisher()); 
-	}
-```
-```log
-20:05:40,676 DEBUG [org.hibernate.SQL] - 
-    select
-        author0_.id as id1_0_0_,
-        author0_.first_name as first_na2_0_0_,
-        author0_.last_name as last_nam3_0_0_,
-        author0_.version as version4_0_0_,
-        books1_.author_id as author_i2_2_1_,
-        book2_.id as book_id1_2_1_,
-        book2_.id as id1_1_2_,
-        book2_.publisher_id as publishe5_1_2_,
-        book2_.publishing_date as publishi2_1_2_,
-        book2_.title as title3_1_2_,
-        book2_.version as version4_1_2_,
-        publisher3_.id as id1_3_3_,
-        publisher3_.name as name2_3_3_,
-        publisher3_.version as version3_3_3_ 
-    from
-        author author0_ 
-    left outer join
-        book_author books1_ 
-            on author0_.id=books1_.author_id 
-    left outer join
-        book book2_ 
-            on books1_.book_id=book2_.id 
-    left outer join
-        publisher publisher3_ 
-            on book2_.publisher_id=publisher3_.id 
-    where
-        author0_.id=?
-
-Joshua Bloch wrote 1 books.
-Publisher name: Addison-Wesley Professional
-
-```

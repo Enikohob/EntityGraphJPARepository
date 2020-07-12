@@ -74,7 +74,6 @@ public class TestJPARepositoryEntityGraph {
 		 for(Book book: books) {
 			log.info(book.getPublisher()); 
 		 }
-		
 	}
 	
 }
